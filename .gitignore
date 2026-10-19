@@ -31,3 +31,24 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Docker & PostgreSQL ###
+# Directorios de datos locales para volúmenes de PostgreSQL
+postgres_data/
+pgdata/
+.postgres/
+
+# Archivos de variables de entorno (credenciales de BD, etc.)
+.env
+
+### Logs y Temporales ###
+*.log
+*.tmp
+*.bak
+hs_err_pid*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+desktop.ini
