@@ -1,6 +1,8 @@
-package com.datatrust.datatrust.domain;
+package com.datatrust.datatrust.infrastructure.persistence.catalog;
 
 import java.util.UUID;
+
+import com.datatrust.datatrust.domain.enums.ColumnType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,11 +14,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import com.datatrust.datatrust.domain.enums.ColumnType;
-
 @Entity
 @Table(name = "dataset_columns")
-public class DatasetColumn{
+public class DatasetColumnEntity {
 
     @Id
     @Column(name = "id", nullable = false, updatable = false)
@@ -24,7 +24,7 @@ public class DatasetColumn{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "dataset_id", nullable = false, updatable = false)
-    private Dataset dataset;
+    private DatasetEntity dataset;
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;
@@ -39,11 +39,11 @@ public class DatasetColumn{
     @Column(name = "required", nullable = false)
     private Boolean required;
 
-    protected DatasetColumn() {
+    protected DatasetColumnEntity() {
         // requerido por JPA
     }
 
-    public DatasetColumn(UUID id, Dataset dataset, String name,
+    public DatasetColumnEntity(UUID id, DatasetEntity dataset, String name,
                                Integer position, ColumnType expectedType, Boolean required) {
         this.id = id;
         this.dataset = dataset;
@@ -53,4 +53,27 @@ public class DatasetColumn{
         this.required = required;
     }
 
+    public UUID getId() {
+        return id;
+    }
+
+    public DatasetEntity getDataset() {
+        return dataset;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Integer getPosition() {
+        return position;
+    }
+
+    public ColumnType getExpectedType() {
+        return expectedType;
+    }
+
+    public Boolean getRequired() {
+        return required;
+    }
 }
