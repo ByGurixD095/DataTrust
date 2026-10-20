@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.datatrust.application.ports.DatasetRepository;
 import com.datatrust.domain.catalog.Dataset;
 import com.datatrust.domain.catalog.DatasetColumn;
+import com.datatrust.domain.catalog.DatasetVersion;
+import com.datatrust.domain.catalog.DatasetWithCurrentVersion;
 import com.datatrust.domain.enums.DatasetFormat;
 
 @Service
@@ -24,20 +26,22 @@ public class DatasetService {
     public UUID register(String name, String description, UUID ownerId,
                          DatasetFormat format, int major, int minor, int patch,
                          List<DatasetColumn> columns) {
-        Dataset dataset = Dataset.create(name, description, ownerId, format,
-                major, minor, patch, columns);
-        repository.save(dataset);
+        UUID datasetId = UUID.randomUUID();
+        DatasetVersion version = DatasetVersion.create(
+                datasetId, major, minor, patch, format, columns, ownerId);
+        Dataset dataset = Dataset.create(datasetId, name, description, ownerId, version.id());
+        repository.save(new DatasetWithCurrentVersion(dataset, version));
         return dataset.id();
     }
 
     @Transactional(readOnly = true)
-    public Dataset get(UUID id) {
+    public DatasetWithCurrentVersion get(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new DatasetNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
-    public List<Dataset> list(int page, int size) {
+    public List<DatasetWithCurrentVersion> list(int page, int size) {
         return repository.findPage(page, size);
     }
 }

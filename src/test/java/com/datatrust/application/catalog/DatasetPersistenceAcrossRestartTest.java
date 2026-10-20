@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import com.datatrust.domain.catalog.Dataset;
 import com.datatrust.domain.catalog.DatasetColumn;
 import com.datatrust.domain.enums.ColumnType;
 import com.datatrust.domain.enums.DatasetFormat;
@@ -31,11 +30,11 @@ class DatasetPersistenceAcrossRestartTest {
 
         try (ConfigurableApplicationContext second =
                      StandaloneApplication.start(SharedPostgres.CONTAINER)) {
-            Dataset found = second.getBean(DatasetService.class).get(id);
+            var found = second.getBean(DatasetService.class).get(id);
 
-            assertThat(found.name()).isEqualTo("persistente");
-            assertThat(found.columns()).hasSize(1);
-            assertThat(found.versionText()).isEqualTo("1.0.0");
+            assertThat(found.dataset().name()).isEqualTo("persistente");
+            assertThat(found.currentVersion().schemaSnapshot().columns()).hasSize(1);
+            assertThat(found.currentVersion().versionNumber()).isEqualTo("1.0.0");
         }
     }
 }

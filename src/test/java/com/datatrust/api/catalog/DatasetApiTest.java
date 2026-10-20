@@ -51,7 +51,7 @@ class DatasetApiTest {
 
     @BeforeEach
     void cleanDatabase() {
-        // Las columnas se borran en cascada por la clave foránea
+        // Las versiones se borran en cascada por la clave foránea
         jdbc.update("DELETE FROM datasets");
     }
 

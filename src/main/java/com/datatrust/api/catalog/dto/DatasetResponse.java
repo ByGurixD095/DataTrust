@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import com.datatrust.domain.catalog.Dataset;
 import com.datatrust.domain.catalog.DatasetColumn;
+import com.datatrust.domain.catalog.DatasetVersion;
+import com.datatrust.domain.catalog.DatasetWithCurrentVersion;
 import com.datatrust.domain.enums.ColumnType;
 import com.datatrust.domain.enums.DatasetFormat;
 
@@ -19,16 +21,18 @@ public record DatasetResponse(
         Instant createdAt,
         List<ColumnResponse> columns) {
 
-    public static DatasetResponse from(Dataset dataset) {
+    public static DatasetResponse from(DatasetWithCurrentVersion catalogEntry) {
+        Dataset dataset = catalogEntry.dataset();
+        DatasetVersion version = catalogEntry.currentVersion();
         return new DatasetResponse(
                 dataset.id(),
                 dataset.name(),
                 dataset.description(),
                 dataset.ownerId(),
-                dataset.format(),
-                dataset.versionText(),
-                dataset.createdAt(),
-                dataset.columns().stream().map(ColumnResponse::from).toList());
+                version.schemaSnapshot().format(),
+                version.versionNumber(),
+                version.createdAt(),
+                version.schemaSnapshot().columns().stream().map(ColumnResponse::from).toList());
     }
 
     public record ColumnResponse(

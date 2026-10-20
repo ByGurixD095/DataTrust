@@ -26,11 +26,19 @@ class FlywayMigrationTest {
                 Integer tables = jdbc.queryForObject(
                         "SELECT count(*) FROM information_schema.tables "
                                 + "WHERE table_schema = 'public' "
-                                + "AND table_name IN ('datasets', 'dataset_columns')",
+                                + "AND table_name IN ('datasets', 'dataset_versions')",
+                        Integer.class);
+                Integer snapshots = jdbc.queryForObject(
+                        "SELECT count(*) FROM information_schema.columns "
+                                + "WHERE table_schema = 'public' "
+                                + "AND table_name = 'dataset_versions' "
+                                + "AND column_name = 'schema_snapshot' "
+                                + "AND udt_name = 'jsonb'",
                         Integer.class);
 
                 assertThat(applied).isEqualTo(1);
                 assertThat(tables).isEqualTo(2);
+                assertThat(snapshots).isEqualTo(1);
             }
         }
     }
