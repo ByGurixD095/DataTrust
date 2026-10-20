@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Min;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +25,6 @@ import com.datatrust.datatrust.application.catalog.DatasetService;
 import com.datatrust.datatrust.application.ports.CurrentUserProvider;
 import com.datatrust.datatrust.domain.catalog.DatasetColumn;
 
-@Validated
 @RestController
 @RequestMapping("/api/v1/datasets")
 public class DatasetController {

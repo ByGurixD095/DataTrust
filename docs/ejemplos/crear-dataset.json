@@ -1,0 +1,12 @@
+{
+  "name": "clientes",
+  "description": "Clientes de prueba",
+  "format": "CSV",
+  "major": 1,
+  "minor": 2,
+  "patch": 3,
+  "columns": [
+    { "name": "id", "position": 1, "expectedType": "INTEGER", "required": true },
+    { "name": "email", "position": 2, "expectedType": "STRING", "required": true }
+  ]
+}
