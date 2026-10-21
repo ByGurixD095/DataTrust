@@ -19,6 +19,9 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.datatrust.application.catalog.DatasetNotFoundException;
+import com.datatrust.application.auth.DuplicateUserException;
+import com.datatrust.application.auth.InvalidCredentialsException;
+import com.datatrust.application.auth.InvalidPasswordException;
 import com.datatrust.domain.catalog.DatasetValidationException;
 import com.datatrust.domain.catalog.DuplicateDatasetNameException;
 
@@ -49,6 +52,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Nombre de dataset duplicado");
         problem.setProperty("conflictingName", ex.datasetName());
+        return problem;
+    }
+
+    @ExceptionHandler(DuplicateUserException.class)
+    public ProblemDetail handleDuplicateUser(DuplicateUserException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Usuario duplicado");
+        problem.setProperty("field", ex.field());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Credenciales no válidas");
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ProblemDetail handleInvalidPassword(InvalidPasswordException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Contraseña no válida");
+        problem.setProperty("field", "password");
         return problem;
     }
 

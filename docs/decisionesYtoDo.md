@@ -88,14 +88,15 @@ Registro de decisiones tomadas durante la entrega 1 (catálogo de datasets).
 
 **Sin actualización ni borrado en la entrega 1.** RF-01 y RF-02 solo piden crear y consultar.
 
-## Seguridad (temporal en la entrega 1)
+## Seguridad
 
-**Sin autenticación en la entrega 1.** `spring-boot-starter-security` se retiró del `pom.xml` para que la API sea accesible durante el desarrollo. Lo acordó el cliente y debe revertirse en la entrega 3.
+**JWT stateless con HS256.** Spring Security valida los bearer tokens; el emisor incluye el UUID del usuario como `sub`, junto con username y rol. El secreto Base64 se exige mediante `JWT_SECRET` y debe representar al menos 32 bytes. Los tokens expiran a los 15 minutos.
 
-**`FixedCurrentUserProvider` como solución temporal.** Devuelve siempre el mismo usuario de desarrollo, hasta que haya autenticación real.
+**Registro público limitado a `DATA_STEWARD`.** El cliente nunca puede escoger su rol en el endpoint público. Las contraseñas se guardan con BCrypt (coste 12), y los nombres de usuario y emails son únicos sin distinguir mayúsculas.
 
-- [ ] **Pendiente (V2):** tabla `users` y clave foránea de `datasets.owner_id`. En la V1 `owner_id` es `NOT NULL` sin clave foránea, porque la tabla no existe todavía.
-- [ ] **Pendiente (entrega 3):** permisos de modificación. Solo el propietario o un `ADMIN` puede modificar un dataset. `ADMIN` y `DATA_STEWARD` pueden leer el catálogo.
+**Identidad de datasets desde el token.** `JwtCurrentUserProvider` reemplaza al proveedor fijo y obtiene `owner_id` del `sub` validado; no se acepta un propietario en el cuerpo de creación.
+
+**Alcance de autorización pendiente.** Las rutas requieren autenticación, pero todavía no se aplican permisos por rol ni aislamiento de lectura por propietario. La desactivación impide nuevos inicios de sesión; los JWT ya emitidos expiran normalmente.
 
 ## Pruebas
 
@@ -103,9 +104,9 @@ Registro de decisiones tomadas durante la entrega 1 (catálogo de datasets).
 
 **Persistencia con PostgreSQL real.** `DatasetPersistenceAdapterTest` usa `@DataJpaTest` con Testcontainers: duplicados sin distinguir mayúsculas, orden de columnas y `Optional` vacío.
 
-**API con `MockMvc`.** `DatasetApiTest` cubre creación con `201` y `Location`, consulta, duplicados con `409`, validación con `400`, `404` y paginación. El contenedor PostgreSQL se comparte entre clases.
+**API con `MockMvc`.** Los tests cubren registro, login, token inválido, duplicados, hash de contraseña y uso del sujeto JWT como propietario del dataset. El contenedor PostgreSQL se comparte entre clases.
 
-**Migración sobre base vacía.** `FlywayMigrationTest` usa un contenedor nuevo para comprobar que la V1 se aplica desde cero.
+**Migraciones sobre base vacía.** `FlywayMigrationTest` usa un contenedor nuevo para comprobar V1 y V2 desde cero, incluidos usuarios y la FK del propietario.
 
 **Persistencia tras reinicio.** `DatasetPersistenceAcrossRestartTest` cierra un contexto de Spring y abre otro sobre la misma base. Cubre RNF-04 a pequeña escala.
 
@@ -121,10 +122,8 @@ Si el puerto de Ryuk está bloqueado, `TESTCONTAINERS_RYUK_DISABLED=true` lo des
 
 **Ejemplos en `docs/ejemplos/`.** El JSON de creación se guarda como ejemplo. En Windows, `curl.exe` lo envía con `--data-binary "@fichero.json"`, porque el escapado de comillas en PowerShell no es fiable.
 
-## Pendientes para la entrega 2
+## Pendientes
 
-- [ ] Migración V2 con la tabla `users` y la clave foránea de `datasets.owner_id`.
-- [ ] Sustituir `FixedCurrentUserProvider` por autenticación real.
 - [ ] Decidir `FLOAT` frente a `DECIMAL` para `expected_type`.
 - [ ] Lectura de CSV en streaming con Commons CSV, sin escribir el fichero en disco.
 - [ ] Contrato de la API de validación: `POST /api/v1/datasets/{id}/validations`, multipart, con lectura en streaming.
@@ -138,6 +137,6 @@ Si el puerto de Ryuk está bloqueado, `TESTCONTAINERS_RYUK_DISABLED=true` lo des
 | Java 21 | Java 17 | El entorno local tiene JDK 17. |
 | Tres servicios de aplicación | `DatasetService` único | Una operación por servicio no aportaba nada. |
 | Versión de dataset como texto libre | Entero codificado, expuesto como texto | Pedido de Gonzalo. Pendiente de confirmar con el cliente. |
-| Seguridad desde el principio | Sin autenticación hasta la entrega 3 | Acordado con el cliente para cerrar el catálogo antes. |
+| Seguridad desde el principio | Registro de DATA_STEWARD y autenticación JWT | La identidad del owner proviene del bearer token validado. |
 | Validación con `@Validated` en el controlador | Validación de Spring MVC | `@Validated` lanza una excepción que el manejador no cubre. |
 | Subida de CSV en el controlador del catálogo | Eliminada del catálogo | Pertenece a la validación de la entrega 2. |

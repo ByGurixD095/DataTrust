@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,15 +51,33 @@ class DatasetApiTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    private String authorization;
+
     @BeforeEach
-    void cleanDatabase() {
+    void cleanDatabaseAndAuthenticateOwner() throws Exception {
         // Las versiones se borran en cascada por la clave foránea
         jdbc.update("DELETE FROM datasets");
+        jdbc.update("DELETE FROM users");
+        MvcResult result = mvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "dataset-owner",
+                                  "password": "dataset-test-password-123",
+                                  "displayName": "Dataset owner",
+                                  "email": "dataset-owner@example.com"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+        authorization = "Bearer " + jsonValue(
+                result.getResponse().getContentAsString(), "accessToken");
     }
 
     @Test
     void createReturns201WithLocation() throws Exception {
         MvcResult result = mvc.perform(post(BASE)
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(datasetJson("clientes", ID_AND_EMAIL)))
                 .andExpect(status().isCreated())
@@ -77,7 +97,8 @@ class DatasetApiTest {
                 """;
         String id = createAndGetId(datasetJson("clientes", columnsReversed));
 
-        mvc.perform(get(BASE + "/" + id))
+        mvc.perform(get(BASE + "/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("clientes"))
                 .andExpect(jsonPath("$.columns[0].name").value("id"))
@@ -89,6 +110,7 @@ class DatasetApiTest {
         createAndGetId(datasetJson("clientes", ID_AND_EMAIL));
 
         mvc.perform(post(BASE)
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(datasetJson("CLIENTES", ID_AND_EMAIL)))
                 .andExpect(status().isConflict())
@@ -98,6 +120,7 @@ class DatasetApiTest {
     @Test
     void missingColumnsReturns400WithFieldErrors() throws Exception {
         mvc.perform(post(BASE)
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(datasetJson("clientes", "[]")))
                 .andExpect(status().isBadRequest())
@@ -114,6 +137,7 @@ class DatasetApiTest {
                 """;
 
         mvc.perform(post(BASE)
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(datasetJson("clientes", duplicated)))
                 .andExpect(status().isBadRequest())
@@ -125,7 +149,8 @@ class DatasetApiTest {
     void unknownIdReturns404() throws Exception {
         String id = UUID.randomUUID().toString();
 
-        mvc.perform(get(BASE + "/" + id))
+        mvc.perform(get(BASE + "/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.datasetId").value(id));
     }
@@ -136,20 +161,24 @@ class DatasetApiTest {
         createAndGetId(datasetJson("dos", ID_AND_EMAIL));
         createAndGetId(datasetJson("tres", ID_AND_EMAIL));
 
-        mvc.perform(get(BASE).param("page", "0").param("size", "2"))
+        mvc.perform(get(BASE).param("page", "0").param("size", "2")
+                        .header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
 
-        mvc.perform(get(BASE).param("page", "1").param("size", "2"))
+        mvc.perform(get(BASE).param("page", "1").param("size", "2")
+                        .header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
 
-        mvc.perform(get(BASE).param("size", "500"))
+        mvc.perform(get(BASE).param("size", "500")
+                        .header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isBadRequest());
     }
 
     private String createAndGetId(String json) throws Exception {
         MvcResult result = mvc.perform(post(BASE)
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
@@ -171,5 +200,12 @@ class DatasetApiTest {
                   "columns": %s
                 }
                 """.formatted(name, columns);
+    }
+
+    private static String jsonValue(String json, String field) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(field) + "\"\\s*:\\s*\"([^\"]+)\"")
+                .matcher(json);
+        assertThat(matcher.find()).as("JSON field %s", field).isTrue();
+        return matcher.group(1);
     }
 }

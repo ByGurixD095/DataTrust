@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.datatrust.domain.catalog.DatasetColumn;
 import com.datatrust.domain.enums.ColumnType;
@@ -19,11 +20,18 @@ class DatasetPersistenceAcrossRestartTest {
     @Test
     void datasetSurvivesApplicationRestart() {
         UUID id;
+        UUID ownerId = UUID.randomUUID();
 
         try (ConfigurableApplicationContext first =
                      StandaloneApplication.start(SharedPostgres.CONTAINER)) {
+            first.getBean(JdbcTemplate.class).update("""
+                    INSERT INTO users
+                        (id, username, password_hash, role, display_name, email)
+                    VALUES (?, 'restart-owner', 'test-hash', 'DATA_STEWARD',
+                            'Restart owner', 'restart-owner@example.com')
+                    """, ownerId);
             id = first.getBean(DatasetService.class).register(
-                    "persistente", "sobrevive al reinicio", UUID.randomUUID(),
+                    "persistente", "sobrevive al reinicio", ownerId,
                     DatasetFormat.CSV, 1, 0, 0,
                     List.of(DatasetColumn.create("id", 1, ColumnType.INTEGER, true)));
         }
