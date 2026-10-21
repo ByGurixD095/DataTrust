@@ -7,13 +7,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.springframework.stereotype.Component;
+
 import com.datatrust.application.validation.ValidationReport.CellError;
 import com.datatrust.domain.catalog.DatasetColumn;
 
-/**
- * Aplica las reglas de las columnas de una versión a un {@link RowReader}.
- * No conoce ningún formato: solo ve filas.
- */
+
+@Component
 public class ContentValidator {
 
     /** Máximo de incidencias concretas en el informe; los contadores siguen contando todas. */

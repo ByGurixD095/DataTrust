@@ -22,6 +22,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.datatrust.application.catalog.DatasetNotFoundException;
+import com.datatrust.application.validation.MalformedContentException;
 import com.datatrust.application.auth.DuplicateUserException;
 import com.datatrust.application.auth.InvalidCredentialsException;
 import com.datatrust.application.auth.InvalidPasswordException;
@@ -107,6 +108,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(MalformedContentException.class)
+    public ProblemDetail handleMalformedContent(MalformedContentException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        pd.setTitle("Contenido no válido");
+        return pd;
+    }
+    
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers,
