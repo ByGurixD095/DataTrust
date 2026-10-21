@@ -21,11 +21,13 @@ public class AuthService {
     private final UserRepository users;
     private final PasswordHasher passwords;
     private final AccessTokenIssuer tokens;
+    private final String dummyHash;
 
     public AuthService(UserRepository users, PasswordHasher passwords, AccessTokenIssuer tokens) {
         this.users = users;
         this.passwords = passwords;
         this.tokens = tokens;
+        this.dummyHash = passwords.hash(UUID.randomUUID().toString());
     }
 
     @Transactional
@@ -43,8 +45,14 @@ public class AuthService {
         if (username == null || password == null) {
             throw new InvalidCredentialsException();
         }
-        User user = users.findByUsername(username.strip())
-                .orElseThrow(InvalidCredentialsException::new);
+
+        var found = users.findByUsername(username.strip());
+        if (found.isEmpty()) {
+            passwords.matches(password, dummyHash);
+            throw new InvalidCredentialsException();
+        }
+
+        User user = found.get();
         if (!user.active() || !passwords.matches(password, user.passwordHash())) {
             throw new InvalidCredentialsException();
         }
