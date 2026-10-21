@@ -3,11 +3,13 @@ package com.datatrust.infrastructure.validation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.csv.CSVException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -46,8 +48,11 @@ public final class CsvRowReader implements RowReader {
             for (CSVRecord csvRecord : parser) {
                 consumer.accept(toRow(csvRecord));
             }
-        } catch (IllegalStateException ex) {
-            throw new MalformedContentException("El CSV contiene datos mal formados", ex);
+        } catch (UncheckedIOException ex) {
+            if (ex.getCause() instanceof CSVException) {
+                throw new MalformedContentException("El CSV contiene datos mal formados", ex);
+            }
+            throw ex;
         }
     }
 
@@ -59,7 +64,7 @@ public final class CsvRowReader implements RowReader {
     private static CSVParser openParser(InputStream content) throws IOException {
         try {
             return CSVParser.parse(new InputStreamReader(content, StandardCharsets.UTF_8), FORMAT);
-        } catch (IllegalStateException ex) {
+        } catch (CSVException ex) {
             throw new MalformedContentException("La cabecera del CSV no es válida", ex);
         }
     }
